@@ -7,3 +7,6 @@ data/unpaved.json
 data/context.json
 data/places.json
 __pycache__/
+# web build
+web/node_modules/
+web/dist/

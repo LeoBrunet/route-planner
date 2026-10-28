@@ -7,7 +7,7 @@ Plan bike and running routes anywhere and export GPX. It's a macOS app, also usa
 | Path | What it is |
 |---|---|
 | `app/` | Native macOS app (Swift, WKWebView). `app/build_app.sh` builds `Route Planner.app`. |
-| `heatmap_template.html` | Source of the map and route planner page. `scripts/build_page.py` embeds the data and writes `route-planner.html`. |
+| `web/` | The map and route planner UI in TypeScript (`web/src/`, one module per concern) plus its HTML/CSS shell (`web/index.html`). `scripts/build_page.py` type-checks and bundles it with esbuild, then inlines it with the data into `route-planner.html`. |
 | `route-planner.html` | Built page. Open it with `Open Route Planner.command`, which serves it on localhost so routing and location work in Safari. |
 | `profiles/` | BRouter profiles (gravel, fastbike, trekking) with an added `cycleway_priority` parameter that penalises car roads without cycle lanes or tracks. `scripts/make_profiles.py` regenerates them. |
 | `scripts/route.py` | Command-line route builder: waypoints → GPX plus a surface report (paved / fast gravel / rough / technical). |
@@ -28,9 +28,23 @@ Plan bike and running routes anywhere and export GPX. It's a macOS app, also usa
 ## Build
 
 ```bash
-python3 scripts/build_page.py      # page
-app/build_app.sh                   # macOS app (needs Xcode command line tools)
+python3 scripts/build_page.py      # page (needs Node 18+; installs web/ dev dependencies on first run)
+app/build_app.sh                   # macOS app (needs Xcode command line tools); also rebuilds the page
 ```
+
+While working on the UI: `cd web && npm run typecheck`.
+
+## How the macOS app works
+
+The app is a thin native shell around the web page (`app/Sources/main.swift`, ~200 lines of Swift):
+
+1. **Window + WKWebView**: an AppKit window whose content is a WebKit view, the same engine as Safari.
+2. **Bundled page**: `build_app.sh` copies `route-planner.html` into `Route Planner.app/Contents/Resources/web/`. The app serves it through its own `gbg://` URL scheme (`WKURLSchemeHandler`), so the page behaves like a real website: it can call BRouter, Nominatim and the tile servers, and keep its settings in localStorage.
+3. **Native bridge**: the page posts messages to Swift (`window.webkit.messageHandlers.native`), and Swift answers by running JavaScript.
+   - *Location*: CoreLocation gets the position, and the app pushes it to the map with `__loc(lat, lng, accuracy)`.
+   - *GPX export*: the page sends the GPX text and the app opens a native Save dialog (`NSSavePanel`).
+   - *Links*: Strava, Komoot and Google links open in your default browser.
+4. **Bundle**: `build_app.sh` compiles `main.swift` with `swiftc`, generates the icon (`app/tools/make_icon.swift` → `iconutil`), writes `Info.plist` (bundle id, location-permission text) and signs the app ad hoc with `codesign`.
 
 ## Data and licences
 

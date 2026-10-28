@@ -1,0 +1,16 @@
+{
+  "name": "route-planner-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Map and route planner UI of Route Planner (bundled into one page by scripts/build_page.py)",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "bundle": "esbuild src/main.ts --bundle --format=iife --target=safari15 --outfile=dist/app.js",
+    "build": "npm run typecheck && npm run bundle"
+  },
+  "devDependencies": {
+    "@types/leaflet": "1.9.12",
+    "esbuild": "0.24.0",
+    "typescript": "5.6.3"
+  }
+}
