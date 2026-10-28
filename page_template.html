@@ -1,0 +1,309 @@
+<title>Göteborg Gravel Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: field-guide column — a big working map up top, then loop cards, then a reference shelf. Colors borrowed from Swedish topo maps: forest green, gravel ochre, lake blue. */
+:root{
+  --bg:#f3f4ee; --surface:#fbfcf8; --ink:#1d241f; --muted:#5b665e; --line:#d5dad0;
+  --forest:#2f5b3f; --accent:#b8611a;
+  --paved:#9aa39c; --fast:#c9771f; --rough:#8a5a2b; --tech:#a23b5a;
+  --water:#c6dbe6; --coast:#7fa7bd; --road:#c4c9c1; --rail:#8d948e; --mapbg:#eef0e6; --loop:#1f6fb2; --loopsel:#0b4f8a;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121713; --surface:#1a201b; --ink:#e4e9e2; --muted:#9aa69d; --line:#2e3730;
+  --forest:#7fbf93; --accent:#e5913f;
+  --paved:#5d665f; --fast:#f0a040; --rough:#c8955a; --tech:#e06d8f;
+  --water:#1d3442; --coast:#3f6c86; --road:#3a423c; --rail:#5a625c; --mapbg:#161c17; --loop:#5fb0f0; --loopsel:#9fd2ff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121713; --surface:#1a201b; --ink:#e4e9e2; --muted:#9aa69d; --line:#2e3730;
+  --forest:#7fbf93; --accent:#e5913f;
+  --paved:#5d665f; --fast:#f0a040; --rough:#c8955a; --tech:#e06d8f;
+  --water:#1d3442; --coast:#3f6c86; --road:#3a423c; --rail:#5a625c; --mapbg:#161c17; --loop:#5fb0f0; --loopsel:#9fd2ff; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:grid;gap:44px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.05}
+h1{font-size:clamp(2.4rem,6vw,3.6rem);text-transform:uppercase}
+h2{font-size:1.9rem;text-transform:uppercase}
+h3{font-size:1.3rem;font-weight:600}
+p{margin:0;max-width:68ch}
+a{color:var(--forest);text-underline-offset:2px}
+a:focus-visible,button:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+header{display:grid;gap:14px}
+.lede{font-size:1.06rem;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:6px}
+.stat{display:grid;gap:2px}
+.stat b{font:600 1.6rem/1 var(--display);font-variant-numeric:tabular-nums}
+.stat span{font:12px var(--mono);color:var(--muted)}
+.sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.section{display:grid;gap:18px}
+/* map */
+.mapbox{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--mapbg)}
+canvas{display:block;width:100%;height:min(72vh,640px);touch-action:none;cursor:grab}
+canvas.drag{cursor:grabbing}
+.mapctl{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px}
+.mapctl button{width:34px;height:34px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:4px;font:600 18px var(--mono);cursor:pointer}
+.legend{position:absolute;right:10px;top:10px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:10px 12px;display:grid;gap:6px;font-size:13px;max-width:calc(100% - 70px)}
+.legend label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.legend input{accent-color:var(--forest);margin:0}
+.attrib{position:absolute;left:10px;bottom:8px;font:11px var(--mono);color:var(--muted)}
+.scale{position:absolute;right:10px;bottom:8px;font:11px var(--mono);color:var(--muted);display:grid;justify-items:end;gap:2px}
+.scale i{display:block;height:5px;border:1.5px solid var(--muted);border-top:0}
+/* loops */
+.loops{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:10px;cursor:pointer;min-width:0}
+.card.sel{border-color:var(--loop);box-shadow:0 0 0 1px var(--loop)}
+.card .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.nums{display:flex;gap:16px;font:500 13px var(--mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+.nums b{color:var(--ink);font-weight:500}
+.bar{display:flex;height:10px;border-radius:2px;overflow:hidden;background:var(--line)}
+.bar i{display:block;height:100%}
+.split{display:flex;flex-wrap:wrap;gap:4px 14px;font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.note{font-size:13.5px;color:var(--muted)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:500 13px var(--body);padding:7px 12px;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--forest);border-color:var(--forest);color:var(--surface)}
+.badge{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:3px;border:1px solid currentColor;white-space:nowrap}
+.b-good{color:var(--forest)} .b-mixed{color:var(--accent)}
+textarea.gpxfallback{width:100%;height:90px;font:11px var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+/* reference */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px 36px}
+.cols>div{min-width:0;display:grid;gap:10px;align-content:start}
+ul.ref{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+ul.ref li{display:grid;gap:2px}
+ul.ref li a{font-weight:600}
+ul.ref li span{font-size:13.5px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+.tablewrap{overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td code{font:13px var(--mono)}
+ol.steps{margin:0;padding-left:1.3em;display:grid;gap:8px;max-width:72ch}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px;overflow-x:auto;font:12.5px/1.5 var(--mono);margin:0}
+.alert{border-left:3px solid var(--accent);padding:4px 0 4px 14px;display:grid;gap:4px}
+footer{font-size:12.5px;color:var(--muted);display:grid;gap:6px}
+@media (max-width:560px){.legend{font-size:12px;padding:8px}.loops{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Göteborg · 40 km radius · OpenStreetMap, 22 Oct 2026</div>
+  <h1>Göteborg Gravel Atlas</h1>
+  <p class="lede">Every unpaved road and trail around the city, sorted by how it rides on a gravel bike. Six ready-to-ride loops that start at train stations, plus the tools and rules you need to plan your own GPX files.</p>
+  <div class="stats" id="stats"></div>
+</header>
+
+<section class="section">
+  <h2>Surface map</h2>
+  <div class="mapbox">
+    <canvas id="map" aria-label="Map of unpaved roads around Göteborg"></canvas>
+    <div class="mapctl"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zfit" aria-label="Reset view">⌂</button></div>
+    <div class="legend" id="legend"></div>
+    <div class="scale" id="scale"><span></span><i></i></div>
+    <div class="attrib">© OpenStreetMap contributors (ODbL)</div>
+  </div>
+  <p class="note">Drag to pan, scroll or pinch to zoom. Tap a loop card below to show it on the map. Grey lines are main roads; untagged tracks count as rough gravel.</p>
+</section>
+
+<section class="section">
+  <h2>Ready-made loops</h2>
+  <p>Routed with BRouter's gravel profile, then measured segment by segment against OSM surface tags. All start at a Västtåg station (bikes ride free when there's room) or a tram stop. The full GPX files with elevation are in <code>gravel-goteborg/gpx/</code> on your Mac; “Copy GPX” here gives a lighter version you can paste into a file.</p>
+  <div class="loops" id="loops"></div>
+</section>
+
+<section class="section">
+  <h2>Is it rideable?</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Class on map</th><th>OSM tags</th><th>What it feels like</th><th>Tyres</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="background:var(--fast)"></span>Fast gravel</td><td><code>compacted</code>, <code>fine_gravel</code>, <code>tracktype=grade1</code>, gravel on public roads</td><td>The classic Swedish <i>grusväg</i>: packed, smooth, 25–30 km/h is easy. Loose after road grading in spring.</td><td>35–40 mm</td></tr>
+      <tr><td><span class="sw" style="background:var(--rough)"></span>Rough gravel</td><td><code>gravel</code>, <code>unpaved</code> on tracks, untagged <code>highway=track</code>, grade2–3</td><td>Forest and logging roads (<i>skogsbilväg</i>). Grass centre strip, potholes, fresh stone. Rideable, slower.</td><td>40–45 mm</td></tr>
+      <tr><td><span class="sw" style="background:var(--tech)"></span>Technical</td><td><code>ground</code>, <code>dirt</code>, <code>rock</code>, <code>grass</code>, untagged paths, grade4–5</td><td>Hiking trails over granite slabs, roots and bog. Often hike-a-bike on a gravel bike. Avoid when wet.</td><td>MTB / 50 mm+</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div>
+      <h3>Before you trust a line on the map</h3>
+      <ol class="steps">
+        <li><b>Check the satellite image.</b> Lantmäteriet's <a href="https://minkarta.lantmateriet.se/" target="_blank" rel="noopener">Min karta</a> has recent orthophotos and the official topo map, which marks small forest roads.</li>
+        <li><b>Check the heatmap.</b> If the <a href="https://www.strava.com/maps/global-heatmap?sport=Ride" target="_blank" rel="noopener">Strava ride heatmap</a> shows traffic, the road goes through. No traffic on a long track often means a gate or a dead end.</li>
+        <li><b>Look for logging.</b> Fresh clear-cuts can turn a forest road into churned mud. Skogsstyrelsen's <a href="https://www.skogsstyrelsen.se/skogensparlor" target="_blank" rel="noopener">Skogens pärlor</a> map shows notified fellings (<i>avverkningsanmälningar</i>).</li>
+        <li><b>Respect barriers.</b> Boom gates (<i>bom</i>) on private roads stop cars, not bikes. “Enskild väg” is fine to ride; “Privat” near houses is not.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Seasons and conditions</h3>
+      <div class="alert"><b>Right now: moose hunting.</b><span class="note">The moose hunt in southern Sweden runs from mid-October through the winter, mostly on weekday mornings and weekends. Wear orange or a bright colour in the forest and stay on roads.</span></div>
+      <ul class="ref">
+        <li><b>Autumn and spring mud.</b><span>Naturvårdsverket asks riders to avoid wet, muddy trails, which tear up fast. Stick to fast-gravel roads from November to April.</span></li>
+        <li><b>Spring thaw (tjällossning), March–April.</b><span>Forest roads go soft as the frost leaves. Some get weight-limit signs. On a bike it means slow, deep gravel.</span></li>
+        <li><b>Best months.</b><span>Late May to early October. Granite trails dry within a day or two of rain; clay valleys along Säveån and Göta älv stay sticky.</span></li>
+        <li><b>Daylight.</b><span>In late October the sun sets around 17:00. Bring lights for anything over 3 hours.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Making your own GPX</h2>
+  <div class="cols">
+    <div>
+      <h3>Planners that show surfaces</h3>
+      <ul class="ref">
+        <li><a href="https://brouter.de/brouter-web/" target="_blank" rel="noopener">BRouter-web</a><span>Free, open source, the one used here. Pick the “Gravel” profile, click points, open the Analysis tab for a surface breakdown, export GPX. You can tweak the profile to avoid paths.</span></li>
+        <li><a href="https://www.komoot.com/plan" target="_blank" rel="noopener">Komoot</a><span>“Gravel ride” sport type with a surface and way-type breakdown on every route. Region pack needed for offline; easy sync to Garmin and Wahoo.</span></li>
+        <li><a href="https://ridewithgps.com/routes/new" target="_blank" rel="noopener">Ride with GPS</a><span>Surface overlay on the map and an unpaved percentage per route. Dalsland's official gravel routes are published here.</span></li>
+        <li><a href="https://graphhopper.com/maps/" target="_blank" rel="noopener">GraphHopper Maps</a><span>Shows surface, road class and steepness as coloured bands along the route profile. Exports GPX.</span></li>
+        <li><a href="https://mapy.com/" target="_blank" rel="noopener">Mapy.com</a><span>Good free planner with a cycling map that marks unpaved roads clearly, plus offline maps on the phone.</span></li>
+        <li><a href="https://www.cyclosm.org/#map=11/57.71/12.10/cyclosm" target="_blank" rel="noopener">CyclOSM</a><span>A map style, not a planner. Draws unpaved roads dashed so you can scan an area quickly.</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Script on your Mac</h3>
+      <p class="note">The loops above came from a small script in <code>gravel-goteborg/scripts/</code>. Give it waypoints and it writes a GPX file with elevation and prints how many km are paved, fast gravel, rough or technical.</p>
+<pre>cd ~/Documents/DEV/gravel-goteborg
+python3 scripts/route.py "My loop" \
+  "57.7705,12.2690;57.8287,12.1398;57.7705,12.2690"</pre>
+      <p class="note">Tip for gravel routing: put waypoints in the middle of the gravel roads you want, not at junctions. <code>scripts/longways.py</code> lists the longest gravel roads inside any box (south, west, north, east).</p>
+<pre>python3 scripts/longways.py 57.74 12.25 57.85 12.5</pre>
+      <p class="note">Use a profile other than <code>gravel</code> (for example <code>trekking</code>) as a third argument for faster, more paved routes.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Routes and rules</h2>
+  <div class="cols">
+    <div>
+      <h3>Official and signed routes</h3>
+      <ul class="ref">
+        <li><a href="https://www.vastsverige.com/en/dalsland/cycling/gravel-cycling/" target="_blank" rel="noopener">Dalsland gravel</a><span>17 loops with GPX on Ride with GPS and over 850 km of gravel roads. About an hour by train from Göteborg. The best gravel weekend in the region.</span></li>
+        <li><a href="https://www.vastsverige.com/en/nature-experiences/cycling/cycle-paths/kattegattleden/" target="_blank" rel="noopener">Kattegattleden</a><span>National route 1, Göteborg to Helsingborg, 390 km in 8 stages. Mostly asphalt with gravel sections, signed and with GPX.</span></li>
+        <li><a href="https://www.vastsverige.com/naturupplevelser/cykla/cykelleder-och-cykelkartor/nationella-cykelleder/" target="_blank" rel="noopener">Sverigeleden and Västgötaleden</a><span>Follow Göta älv north through Lilla Edet to Trollhättan and Vänersborg. Mixed surfaces; good for a one-way ride and a train home.</span></li>
+        <li><a href="https://www.vastsverige.com/sjuharad/natur-och-friluftsliv/cykla/sjuharadsrundan/svenljunga-boras/" target="_blank" rel="noopener">Sjuhäradsrundan</a><span>150 km loop around Borås, 120 km car-free on old railway beds. Svenljunga–Borås has about 8 km of gravel.</span></li>
+        <li><a href="https://www.vastsverige.com/en/nature-experiences/cycling/cycle-paths/vanerleden/" target="_blank" rel="noopener">Vänerleden</a><span>Round lake Vänern from Vänersborg. A multi-day tour, mostly quiet roads.</span></li>
+        <li><a href="https://www.naturkartan.se/sv/municipalities/goteborg/biking" target="_blank" rel="noopener">Naturkartan: Göteborg cycling</a><span>Municipal nature areas, including the Delsjön loops and Änggårdsbergen MTB trails, with reserve rules.</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Rules and logistics</h3>
+      <ul class="ref">
+        <li><a href="https://www.naturvardsverket.se/amnesomraden/allemansratten/aktiviteter/cykling/" target="_blank" rel="noopener">Allemansrätten: cycling</a><span>You may ride private roads and trails. Keep a distance from houses, avoid fields and wet ground, and get landowner permission for organised group rides or races.</span></li>
+        <li><a href="https://www.naturvardsverket.se/amnesomraden/friluftsliv/motortrafik-i-naturen/elcyklar-och-mindre-motoriserade-fordon/" target="_blank" rel="noopener">E-bikes in the terrain</a><span>Naturvårdsverket's view is that allemansrätten does not cover e-bikes, even 250 W pedelecs. Roads are fine; trails are a grey zone.</span></li>
+        <li><a href="https://www.vasttrafik.se/en/travel-with-us/during-the-trip/Bike/" target="_blank" rel="noopener">Västtrafik: bikes on board</a><span>Free on Västtåg and Öresundståg when there's space; staff decide. No bikes on trams, buses or replacement buses. SJ and Vy have their own rules.</span></li>
+        <li><a href="https://www.trafikverket.se/e-tjanster/hamta-data-fran-trafikverket/" target="_blank" rel="noopener">Trafikverket NVDB (Lastkajen)</a><span>The national road database, including surface type (<i>slitlager</i>) on public and many private roads. Useful to cross-check OSM.</span></li>
+        <li><a href="https://ucigravelworldseries.com/en/halmstad/" target="_blank" rel="noopener">Gravel Grit ’n Grind, Halmstad</a><span>The nearest big gravel event, a UCI Gravel World Series qualifier, two hours south.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Map data © OpenStreetMap contributors, ODbL, downloaded 22 Oct 2026 via Overpass. Routing by BRouter. Surface tags are volunteer data: about a third of tracks carry no surface tag, so check before you rely on a section.</span>
+</footer>
+</div>
+
+<script>
+const D=/*DATA*/null;
+(function(){
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const CLS=[null,{k:'fast',n:'Fast gravel',v:'--fast'},{k:'rough',n:'Rough gravel',v:'--rough'},{k:'tech',n:'Technical / trail',v:'--tech'}];
+const K=Math.cos(57.7*Math.PI/180);
+const toLL=(x,y)=>[y*10/110540,x*10/(K*111320)];
+// stats
+const lenOf=a=>{let s=0;for(let i=2;i<a.length;i+=2)s+=Math.hypot(a[i]-a[i-2],a[i+1]-a[i-1]);return s/100};
+const tot=[0,0,0,0];for(const c of [1,2,3])for(const a of D.unp[c])tot[c]+=lenOf(a);
+document.getElementById('stats').innerHTML=[1,2,3].map(c=>`<div class="stat"><b>${Math.round(tot[c]).toLocaleString('en')} km</b><span><i class="sw" style="background:var(${CLS[c].v})"></i>${CLS[c].n}</span></div>`).join('')+`<div class="stat"><b>${D.loops.length}</b><span>loops with GPX</span></div>`;
+// map state
+const cv=document.getElementById('map'),ctx=cv.getContext('2d');
+const show={1:true,2:true,3:true,loops:true};
+let sel=-1;const C0=[71185,637896];
+let view={cx:C0[0]+1500,cy:C0[1]+200,s:0};
+function fit(){const r=cv.getBoundingClientRect();view.cx=C0[0]+1500;view.cy=C0[1]+200;view.s=Math.min(r.width,r.height)/7600;}
+function size(){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=r.width*dpr;cv.height=r.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
+function line(a,off,col,w,dash){const r=cv.getBoundingClientRect(),W=r.width,H=r.height,s=view.s;
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.beginPath();
+  for(const g of a){let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+    for(let i=off;i<g.length;i+=2){const x=g[i],y=g[i+1];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+    if((x1-view.cx)*s<-W/2-10||(x0-view.cx)*s>W/2+10||(view.cy-y0)*s<-H/2-10||(view.cy-y1)*s>H/2+10)continue;
+    for(let i=off;i<g.length;i+=2){const px=W/2+(g[i]-view.cx)*s,py=H/2-(g[i+1]-view.cy)*s;i===off?ctx.moveTo(px,py):ctx.lineTo(px,py);}}
+  ctx.stroke();ctx.setLineDash([]);}
+function fillPoly(a,col){const r=cv.getBoundingClientRect(),W=r.width,H=r.height,s=view.s;ctx.fillStyle=col;ctx.beginPath();
+  for(const g of a){for(let i=0;i<g.length;i+=2){const px=W/2+(g[i]-view.cx)*s,py=H/2-(g[i+1]-view.cy)*s;i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}ctx.closePath();}ctx.fill();}
+const P=(x,y)=>{const r=cv.getBoundingClientRect();return[r.width/2+(x-view.cx)*view.s,r.height/2-(y-view.cy)*view.s]};
+let raf=0;function draw(){raf=0;const r=cv.getBoundingClientRect();ctx.fillStyle=css('--mapbg');ctx.fillRect(0,0,r.width,r.height);
+  const z=view.s;fillPoly(D.lake,css('--water'));line(D.coast,0,css('--coast'),1.2);
+  line(D.rail,0,css('--rail'),1,[4,3]);
+  line(D.road.filter(g=>g[0]<=1),1,css('--road'),z>0.15?2.4:1.6);line(D.road.filter(g=>g[0]==2),1,css('--road'),z>0.15?1.6:1);
+  const w=Math.max(0.8,Math.min(2.4,z*6));
+  if(show[3])line(D.unp[3],0,css('--tech'),w*0.7,z>0.2?[3,2]:[]);
+  if(show[2])line(D.unp[2],0,css('--rough'),w);
+  if(show[1])line(D.unp[1],0,css('--fast'),w*1.2);
+  if(show.loops)D.loops.forEach((l,i)=>{if(sel>=0&&i!==sel)return;line([l.g],0,css('--surface'),i===sel?7:5.5);line([l.g],0,css(i===sel?'--loopsel':'--loop'),i===sel?4:3);});
+  // labels
+  ctx.font=`600 ${z>0.12?14:12}px "Barlow Condensed",Arial Narrow,sans-serif`;ctx.textAlign='center';ctx.lineJoin='round';
+  const lab=(t,x,y,col)=>{const[px,py]=P(x,y);if(px<0||py<0||px>r.width||py>r.height)return;ctx.lineWidth=3;ctx.strokeStyle=css('--mapbg');ctx.strokeText(t,px,py);ctx.fillStyle=col;ctx.fillText(t,px,py);};
+  for(const p of D.places){if(p[1]==='city'||p[1]==='town'||(z>0.09&&p[1]==='village')||(z>0.25&&p[1]==='suburb'))lab(p[1]==='city'?p[0].toUpperCase():p[0],p[2],p[3],css(p[1]==='suburb'?'--muted':'--ink'));}
+  D.loops.forEach((l,i)=>{if(!show.loops||(sel>=0&&i!==sel))return;const[px,py]=P(l.g[0],l.g[1]);ctx.fillStyle=css('--surface');ctx.strokeStyle=css('--loopsel');ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,5,0,7);ctx.fill();ctx.stroke();lab(l.start,l.g[0],l.g[1]+14/z,css('--loopsel'));});
+  // scale bar
+  const target=r.width/5/z*10;const steps=[100,200,500,1000,2000,5000,10000,20000];let m=steps.find(s=>s>=target)||20000;const px=m/10*z;
+  const sc=document.getElementById('scale');sc.querySelector('i').style.width=px+'px';sc.querySelector('span').textContent=m>=1000?(m/1000)+' km':m+' m';}
+const req=()=>{if(!raf)raf=requestAnimationFrame(draw)};
+function zoomAt(f,mx,my){const r=cv.getBoundingClientRect();const wx=view.cx+(mx-r.width/2)/view.s,wy=view.cy-(my-r.height/2)/view.s;view.s=Math.max(0.02,Math.min(3,view.s*f));view.cx=wx-(mx-r.width/2)/view.s;view.cy=wy+(my-r.height/2)/view.s;req();}
+cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAt(Math.exp(-e.deltaY*0.0015),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+const ptrs=new Map();let pinch=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);cv.classList.add('drag');});
+cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId);
+  if(ptrs.size===1){view.cx-=(e.clientX-p[0])/view.s;view.cy+=(e.clientY-p[1])/view.s;req();}
+  ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===2){const[a,b]=[...ptrs.values()];const d=Math.hypot(a[0]-b[0],a[1]-b[1]);const r=cv.getBoundingClientRect();if(pinch)zoomAt(d/pinch,(a[0]+b[0])/2-r.left,(a[1]+b[1])/2-r.top);pinch=d;}});
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=0;if(!ptrs.size)cv.classList.remove('drag');};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+document.getElementById('zin').onclick=()=>{const r=cv.getBoundingClientRect();zoomAt(1.6,r.width/2,r.height/2)};
+document.getElementById('zout').onclick=()=>{const r=cv.getBoundingClientRect();zoomAt(1/1.6,r.width/2,r.height/2)};
+document.getElementById('zfit').onclick=()=>{sel=-1;mark();fit();req()};
+// legend
+const lg=document.getElementById('legend');
+lg.innerHTML=[1,2,3].map(c=>`<label><input type="checkbox" id="lay${c}" checked data-k="${c}"><i class="sw" style="background:var(${CLS[c].v})"></i>${CLS[c].n}</label>`).join('')+`<label><input type="checkbox" id="layl" checked data-k="loops"><i class="sw" style="background:var(--loop)"></i>Loops</label>`;
+lg.addEventListener('change',e=>{show[e.target.dataset.k]=e.target.checked;req();});
+// loops
+const LN={"Delsjön–Härryda forest loop":"Leaves straight from the city through Delsjön. The first and last 10 km are city cycle paths, then forest tracks and some rooty trail around Härryda. Expect a few short walks.",
+"Vättlefjäll loop":"Short, close loop on the long compacted track along the west side of Vättlefjäll. A good after-work ride; about half is on Ale's cycle paths.",
+"Mollsjön traverse Lerum":"Compacted forest roads north of the Säveån valley via Hulta, Roten and Mollsjön. Steady climbing out of Lerum, then rolling.",
+"Floda lakes gravel":"The best gravel ratio near Göteborg. A web of compacted and gravel roads between Tvärsjön, Västerdal, Viebo and Sävhult. Few cars.",
+"Hindås southern forests":"Big, quiet forest roads south of Hindås towards the Rya and Furuberg area. Mostly compacted, some rougher unpaved stretches.",
+"Svartedalen long ride":"A long day to the gravel roads around the Svartedalen nature reserve. Only about a third is gravel because getting there uses asphalt and the Göta älv cycle path."};
+const box=document.getElementById('loops');
+const pct=(l,c)=>(l.classes[c]||0)/l.km*100;
+box.innerHTML=D.loops.map((l,i)=>{const unp=100-pct(l,0);const good=unp>=55;
+  return `<article class="card" data-i="${i}" tabindex="0">
+  <div class="top"><h3>${l.name}</h3><span class="badge ${good?'b-good':'b-mixed'}">${Math.round(unp)}% unpaved</span></div>
+  <div class="nums"><span><b>${l.km}</b> km</span><span><b>${l.ascent}</b> m ↑</span><span>from <b>${l.start}</b></span></div>
+  <div class="bar" aria-hidden="true">${[0,1,2,3].map(c=>`<i style="width:${pct(l,c)}%;background:var(${c?CLS[c].v:'--paved'})"></i>`).join('')}</div>
+  <div class="split">${[0,1,2,3].map(c=>`<span><i class="sw" style="background:var(${c?CLS[c].v:'--paved'})"></i>${c?CLS[c].n:'Paved'} ${(l.classes[c]||0).toFixed(1)} km</span>`).join('')}</div>
+  <p class="note">${LN[l.name]||''}</p>
+  <div class="btns"><button class="btn primary" data-copy="${i}">Copy GPX</button><button class="btn" data-show="${i}">Show on map</button></div>
+  <div class="fb" hidden></div></article>`}).join('');
+function mark(){box.querySelectorAll('.card').forEach(c=>c.classList.toggle('sel',+c.dataset.i===sel));}
+function focusLoop(i){sel=i;mark();const g=D.loops[i].g;let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(let k=0;k<g.length;k+=2){x0=Math.min(x0,g[k]);x1=Math.max(x1,g[k]);y0=Math.min(y0,g[k+1]);y1=Math.max(y1,g[k+1]);}
+  const r=cv.getBoundingClientRect();view.cx=(x0+x1)/2;view.cy=(y0+y1)/2;view.s=Math.min(r.width/(x1-x0),r.height/(y1-y0))*0.82;req();cv.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});}
+function gpx(l){const pts=[];for(let k=0;k<l.g.length;k+=2){const[la,lo]=toLL(l.g[k],l.g[k+1]);pts.push(`<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"/>`);}
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Göteborg Gravel Atlas" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${l.name}</name><trkseg>\n${pts.join('\n')}\n</trkseg></trk>\n</gpx>\n`;}
+box.addEventListener('click',e=>{const b=e.target.closest('button');const card=e.target.closest('.card');if(!card)return;const i=+card.dataset.i;
+  if(b&&b.dataset.copy!==undefined){const txt=gpx(D.loops[i]);const fb=card.querySelector('.fb');
+    navigator.clipboard.writeText(txt).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy GPX',1800)}).catch(()=>{fb.hidden=false;fb.innerHTML='<p class="note">Copy this text into a file ending in .gpx:</p><textarea class="gpxfallback" readonly></textarea>';const ta=fb.querySelector('textarea');ta.value=txt;ta.select();});return;}
+  focusLoop(i);});
+box.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('card'))focusLoop(+e.target.dataset.i)});
+// init
+const init=()=>{size();if(!view.s)fit();req();};
+window.addEventListener('resize',()=>{size();req();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',req);
+new MutationObserver(req).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+init();if(document.fonts)document.fonts.ready.then(req);
+})();
+</script>

@@ -1,0 +1,9 @@
+.DS_Store
+# build output
+app/build/
+app/*.app/
+# raw OpenStreetMap downloads (re-create with scripts/fetch_osm.sh)
+data/unpaved.json
+data/context.json
+data/places.json
+__pycache__/
