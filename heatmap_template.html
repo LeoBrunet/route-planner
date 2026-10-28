@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Route Atlas</title>
+<title>Route Planner</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -77,7 +77,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <div id="map"></div>
 <div class="toast" id="toast" hidden></div>
 <aside class="panel" id="panel">
-  <header><h1>Route Atlas</h1><button class="toggle" id="min">hide</button></header>
+  <header><h1>Route Planner</h1><button class="toggle" id="min">hide</button></header>
   <form class="search" id="search"><input id="q" type="search" placeholder="Search a place, e.g. Annecy" aria-label="Search a place" autocomplete="off"><button class="btn" type="submit">Go</button></form>
   <div class="results" id="results" hidden></div>
   <div class="mode" role="group" aria-label="Activity"><button id="mGravel" aria-pressed="true">Gravel</button><button id="mRoad" aria-pressed="false">Road</button><button id="mRun" aria-pressed="false">Run</button></div>
@@ -239,7 +239,7 @@ window.__locErr=(code,msg)=>map.fire('locationerror',{code,message:msg});
 const toast=(m,ms=5000)=>{const el=$('toast');el.textContent=m;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,ms)};
 window.addEventListener('error',e=>toast('Script error: '+e.message,10000));
 window.addEventListener('unhandledrejection',e=>toast('Error: '+(e.reason&&e.reason.message||e.reason),10000));
-if(!NATIVE&&location.protocol==='file:')toast('Opened as a file: routing and location may be blocked. Use “Open Route Atlas.command” or the Route Atlas app instead.',12000);
+if(!NATIVE&&location.protocol==='file:')toast('Opened as a file: routing and location may be blocked. Use “Open Route Planner.command” or the Route Planner app instead.',12000);
 const Loc={m:null,c:null,on:false,first:true,pos:null};
 const LocCtl=L.Control.extend({options:{position:'topright'},onAdd(){const d=L.DomUtil.create('div','leaflet-bar');const b=L.DomUtil.create('button','locbtn',d);
   b.title='Show my position';b.setAttribute('aria-label','Show my position');b.innerHTML='&#x2316;';Loc.btn=b;L.DomEvent.disableClickPropagation(d);b.onclick=()=>locate(!Loc.on||!!Loc.pos);return d;}});
@@ -349,7 +349,7 @@ let clearArm=0;$('clear').onclick=()=>{if(!clearArm){clearArm=setTimeout(()=>{cl
 $('profile').onchange=()=>update();$('cprio').onchange=()=>update();$('pace').oninput=()=>{save();render();};$('rname').oninput=save;
 const esc=s=>s.replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 $('gpxdl').onclick=()=>{if(track.length<2)return;const n=$('rname').value.trim()||'Route';
-  const g=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Route Atlas (BRouter ${$('profile').value})" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${esc(n)}</name></metadata>\n<trk><name>${esc(n)}</name><trkseg>\n`+
+  const g=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Route Planner (BRouter ${$('profile').value})" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${esc(n)}</name></metadata>\n<trk><name>${esc(n)}</name><trkseg>\n`+
     track.map(t=>`<trkpt lat="${t.lat.toFixed(6)}" lon="${t.lng.toFixed(6)}">${t.ele!=null?`<ele>${(+t.ele).toFixed(1)}</ele>`:''}</trkpt>`).join('\n')+`\n</trkseg></trk>\n</gpx>\n`;
   const fn=n.replace(/[^\p{L}\p{N}\- _]/gu,'').trim().replace(/\s+/g,'-').toLowerCase()+'.gpx';
   if(NATIVE){NATIVE.postMessage({type:'saveGPX',name:fn,content:g});return;}

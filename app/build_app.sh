@@ -1,16 +1,16 @@
 #!/bin/zsh
-# Builds "Route Atlas.app" next to this script.
+# Builds "Route Planner.app" next to this script.
 set -e
 cd "$(dirname "$0")"
 ROOT=..
-APP="Route Atlas.app"
+APP="Route Planner.app"
 BUILD=build
 rm -rf "$BUILD" "$APP"
 mkdir -p "$BUILD" "$APP/Contents/MacOS" "$APP/Contents/Resources/web"
 
 # 1. page (map data + cycle-path profiles embedded)
 (cd $ROOT && python3 -I scripts/build_page.py)
-cp "$ROOT/route-atlas.html" "$APP/Contents/Resources/web/index.html"
+cp "$ROOT/route-planner.html" "$APP/Contents/Resources/web/index.html"
 
 # 2. icon
 swiftc -O tools/make_icon.swift -o "$BUILD/make_icon"
@@ -18,7 +18,7 @@ swiftc -O tools/make_icon.swift -o "$BUILD/make_icon"
 iconutil -c icns "$BUILD/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
 
 # 3. binary
-swiftc -O Sources/main.swift -o "$APP/Contents/MacOS/RouteAtlas" \
+swiftc -O Sources/main.swift -o "$APP/Contents/MacOS/RoutePlanner" \
   -target arm64-apple-macos13.0 -framework Cocoa -framework WebKit -framework CoreLocation
 
 # 4. Info.plist
@@ -26,10 +26,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>CFBundleName</key><string>Route Atlas</string>
-  <key>CFBundleDisplayName</key><string>Route Atlas</string>
-  <key>CFBundleIdentifier</key><string>com.leobrunet.routeatlas</string>
-  <key>CFBundleExecutable</key><string>RouteAtlas</string>
+  <key>CFBundleName</key><string>Route Planner</string>
+  <key>CFBundleDisplayName</key><string>Route Planner</string>
+  <key>CFBundleIdentifier</key><string>com.leobrunet.routeplanner</string>
+  <key>CFBundleExecutable</key><string>RoutePlanner</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>1.0</string>

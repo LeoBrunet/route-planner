@@ -1,4 +1,4 @@
-# Route Atlas
+# Route Planner
 
 Plan bike and running routes anywhere and export GPX. It's a macOS app, also usable in a browser, built on OpenStreetMap, BRouter and the public Strava heatmap. It started as a gravel guide for Göteborg; those extras are still in here.
 
@@ -6,9 +6,9 @@ Plan bike and running routes anywhere and export GPX. It's a macOS app, also usa
 
 | Path | What it is |
 |---|---|
-| `app/` | Native macOS app (Swift, WKWebView). `app/build_app.sh` builds `Route Atlas.app`. |
-| `heatmap_template.html` | Source of the map and route planner page. `scripts/build_page.py` embeds the data and writes `route-atlas.html`. |
-| `route-atlas.html` | Built page. Open it with `Open Route Atlas.command`, which serves it on localhost so routing and location work in Safari. |
+| `app/` | Native macOS app (Swift, WKWebView). `app/build_app.sh` builds `Route Planner.app`. |
+| `heatmap_template.html` | Source of the map and route planner page. `scripts/build_page.py` embeds the data and writes `route-planner.html`. |
+| `route-planner.html` | Built page. Open it with `Open Route Planner.command`, which serves it on localhost so routing and location work in Safari. |
 | `profiles/` | BRouter profiles (gravel, fastbike, trekking) with an added `cycleway_priority` parameter that penalises car roads without cycle lanes or tracks. `scripts/make_profiles.py` regenerates them. |
 | `scripts/route.py` | Command-line route builder: waypoints → GPX plus a surface report (paved / fast gravel / rough / technical). |
 | `scripts/longways.py` | Lists the longest gravel roads in a bounding box, useful for choosing waypoints. |

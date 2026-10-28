@@ -112,7 +112,7 @@ footer{font-size:12.5px;color:var(--muted);display:grid;gap:6px}
 
 <section class="section">
   <h2>Ready-made loops</h2>
-  <p>Routed with BRouter's gravel profile, then measured segment by segment against OSM surface tags. All start at a Västtåg station (bikes ride free when there's room) or a tram stop. The full GPX files with elevation are in <code>gravel-goteborg/gpx/</code> on your Mac; “Copy GPX” here gives a lighter version you can paste into a file.</p>
+  <p>Routed with BRouter's gravel profile, then measured segment by segment against OSM surface tags. All start at a Västtåg station (bikes ride free when there's room) or a tram stop. The full GPX files with elevation are in <code>route-planner/gpx/</code> on your Mac; “Copy GPX” here gives a lighter version you can paste into a file.</p>
   <div class="loops" id="loops"></div>
 </section>
 
@@ -165,8 +165,8 @@ footer{font-size:12.5px;color:var(--muted);display:grid;gap:6px}
     </div>
     <div>
       <h3>Script on your Mac</h3>
-      <p class="note">The loops above came from a small script in <code>gravel-goteborg/scripts/</code>. Give it waypoints and it writes a GPX file with elevation and prints how many km are paved, fast gravel, rough or technical.</p>
-<pre>cd ~/Documents/DEV/gravel-goteborg
+      <p class="note">The loops above came from a small script in <code>route-planner/scripts/</code>. Give it waypoints and it writes a GPX file with elevation and prints how many km are paved, fast gravel, rough or technical.</p>
+<pre>cd ~/Documents/DEV/route-planner
 python3 scripts/route.py "My loop" \
   "57.7705,12.2690;57.8287,12.1398;57.7705,12.2690"</pre>
       <p class="note">Tip for gravel routing: put waypoints in the middle of the gravel roads you want, not at junctions. <code>scripts/longways.py</code> lists the longest gravel roads inside any box (south, west, north, east).</p>

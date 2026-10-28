@@ -3,7 +3,7 @@ import WebKit
 import CoreLocation
 import UniformTypeIdentifiers
 
-// Route Atlas — a native window around the route map page.
+// Route Planner — a native window around the route map page.
 // The page is served from the app bundle via the gbg:// scheme; the app adds
 // CoreLocation for "my position" and a save dialog for GPX export.
 
@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1400, height: 900),
                           styleMask: [.titled, .closable, .miniaturizable, .resizable],
                           backing: .buffered, defer: false)
-        window.title = "Route Atlas"
+        window.title = "Route Planner"
         window.contentView = webView
         window.center()
         window.setFrameAutosaveName("MainWindow")
@@ -79,11 +79,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         let main = NSMenu()
         let appItem = NSMenuItem(); main.addItem(appItem)
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Route Atlas",
+        appMenu.addItem(withTitle: "About Route Planner",
                         action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        appMenu.addItem(withTitle: "Quit Route Atlas", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit Route Planner", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
 
         let editItem = NSMenuItem(); main.addItem(editItem)
