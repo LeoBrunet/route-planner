@@ -1,0 +1,4 @@
+# Built pages with embedded data: excluded from GitHub language stats and collapsed in diffs
+route-planner.html linguist-generated=true
+goteborg-gravel-atlas.html linguist-generated=true
+data/** linguist-generated=true
